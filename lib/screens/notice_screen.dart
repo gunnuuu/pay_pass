@@ -19,6 +19,7 @@ class NoticeScreen {
 
     // 다이얼로그 표시
     await showDialog(
+      // ignore: use_build_context_synchronously
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
@@ -75,6 +76,7 @@ class NoticeScreen {
                         // 오늘 하루 보지 않기 설정
                         await prefs.setString(
                             'lastNoticeDismissDate', today.toIso8601String());
+                        // ignore: use_build_context_synchronously
                         Navigator.of(context).pop();
                       },
                       child: Text(

@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'package:pay_pass/screens/mypage_screen.dart';
 import 'package:pay_pass/screens/simple_log_screen.dart';
 import 'package:pay_pass/screens/map_screen.dart';
@@ -9,13 +7,14 @@ import 'package:pay_pass/screens/map_screen.dart';
 class DetailedlogScreen extends StatefulWidget {
   final Map<String, dynamic> log;
 
-  DetailedlogScreen({required this.log});
+  const DetailedlogScreen({super.key, required this.log});
 
   @override
-  _DetailedInfoScreenState createState() => _DetailedInfoScreenState();
+  State<DetailedlogScreen> createState() => _DetailedInfoScreenState();
 }
 
 class _DetailedInfoScreenState extends State<DetailedlogScreen> {
+  // ignore: unused_field
   late GoogleMapController _controller;
 
   // 더미 좌표 (실제 데이터로 교체 필요)
@@ -146,6 +145,14 @@ class _DetailedInfoScreenState extends State<DetailedlogScreen> {
                     },
                   );
                 },
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.orange, width: 2),
+                  ),
+                  backgroundColor: Colors.white,
+                ),
                 child: Padding(
                   padding: const EdgeInsets.only(right: 16.0), //
                   child: Text(
@@ -156,14 +163,6 @@ class _DetailedInfoScreenState extends State<DetailedlogScreen> {
                       color: Colors.black,
                     ),
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.orange, width: 2),
-                  ),
-                  backgroundColor: Colors.white,
                 ),
               ),
             ],
