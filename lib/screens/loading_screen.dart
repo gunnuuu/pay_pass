@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:async'; // 타이머 사용을 위한 임포트
 import 'package:pay_pass/screens/login_screen.dart'; // 로그인 화면
-import 'package:pay_pass/screens/map_screen.dart'; // 실제 화면
 
 class LoadingScreen extends StatefulWidget {
+  const LoadingScreen({super.key});
+
   @override
-  _LoadingScreenState createState() => _LoadingScreenState();
+  State<LoadingScreen> createState() => _LoadingScreenState();
 }
 
 class _LoadingScreenState extends State<LoadingScreen> {
@@ -24,11 +25,15 @@ class _LoadingScreenState extends State<LoadingScreen> {
     // 예시로 3초 동안 로딩을 시뮬레이션
     await Future.delayed(Duration(seconds: 3));
 
-    // 로딩 끝나면 로그인 화면으로 이동
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()), // 로그인 화면
-    );
+    // mounted 여부 확인 후 화면 전환 (State가 여전히 유효한지 검증)
+    // 현재 화면이 여전히 표시되고 있는지, 또는 해당 위젯이 아직 트리에서 제거되지 않았는지를 확인
+    // mounted == true: 위젯이 여전히 화면 위에 있으며 State도 유효하다.
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()), // 로그인 화면
+      );
+    }
   }
 
   // 색 번갈아가며 변경하는 함수

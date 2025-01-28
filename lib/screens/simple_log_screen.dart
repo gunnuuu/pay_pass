@@ -1,12 +1,22 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
+
 import 'package:pay_pass/screens/detailed_log_screen.dart';
 import 'package:pay_pass/screens/mypage_screen.dart';
 import 'package:pay_pass/screens/map_screen.dart';
+import 'package:pay_pass/utils/location_service.dart';
+import 'package:pay_pass/variables/constants.dart';
+import 'package:pay_pass/variables/globals.dart';
+import 'package:pay_pass/utils/logger.dart';
 
-class SimpleLogScreen extends StatelessWidget {
+class SimpleLogScreen extends StatefulWidget {
+  const SimpleLogScreen({super.key});
+
+  @override
+  State<SimpleLogScreen> createState() => _SimpleLogScreenState();
+}
+
+class _SimpleLogScreenState extends State<SimpleLogScreen> {
+  final LocationService _locationService = LocationService();
   final List<Map<String, dynamic>> logData = [
     {
       'date': '2025-01-18',
@@ -22,6 +32,33 @@ class SimpleLogScreen extends StatelessWidget {
     },
     // Add more log entries here
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeLocationService();
+  }
+
+  // LocationService 초기화  -> 얘만 페이지별로 추가해주고 initState에 추가하여 호출시 동작 가능능
+  Future<void> _initializeLocationService() async {
+    await _locationService.enableLocationServices();
+    await _locationService.initializeWebSocket('ws://${Constants.ip}/location');
+
+    _locationService.startListening((position) {
+      // 지오펜싱 확인
+      final isNearStation = _locationService.checkGeofence(
+        stations,
+        position.latitude,
+        position.longitude,
+      );
+
+      if (isNearStation) {
+        logger.i("정류장 근처에 있습니다.");
+      } else {
+        logger.i("정류장 근처가 아닙니다.");
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,5 +128,11 @@ class SimpleLogScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _locationService.dispose(); // 리소스 정리
+    super.dispose();
   }
 }

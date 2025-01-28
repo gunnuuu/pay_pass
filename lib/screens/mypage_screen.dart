@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -5,42 +6,75 @@ import 'package:pay_pass/screens/simple_log_screen.dart';
 import 'package:pay_pass/screens/map_screen.dart';
 import 'package:pay_pass/variables/constants.dart';
 import 'package:pay_pass/variables/globals.dart';
+import 'package:pay_pass/utils/location_service.dart';
+import 'package:pay_pass/utils/logger.dart';
 
 class MyPageScreen extends StatefulWidget {
+  const MyPageScreen({super.key});
+
   @override
-  _MyPageScreenState createState() => _MyPageScreenState();
+  State<MyPageScreen> createState() => _MyPageScreenState();
 }
 
 class _MyPageScreenState extends State<MyPageScreen> {
   late Map<String, dynamic> _userData;
   bool _isLoading = true;
   double _walletBalance = 0.0;
-  String _paymentDueDate = "2025-02-01";
+  final String _paymentDueDate = "2025-02-01";
+
+  final LocationService _locationService = LocationService();
 
   @override
   void initState() {
     super.initState();
+    _initializeLocationService();
     _fetchUserData();
     _fetchWalletBalance();
   }
 
+  // LocationService 초기화  -> 얘만 페이지별로 추가해주고 initState에 추가하여 호출시 동작 가능능
+  Future<void> _initializeLocationService() async {
+    await _locationService.enableLocationServices();
+    await _locationService.initializeWebSocket('ws://${Constants.ip}/location');
+
+    _locationService.startListening((position) {
+      // 지오펜싱 확인
+      final isNearStation = _locationService.checkGeofence(
+        stations,
+        position.latitude,
+        position.longitude,
+      );
+
+      if (isNearStation) {
+        logger.i("정류장 근처입니다");
+      } else {
+        logger.i("정류장 근처가 아님");
+      }
+    });
+  }
+
+  // 유저 데이터 가져오는 함수
   Future<void> _fetchUserData() async {
     final email = globalGoogleId;
-    final url = Uri.parse('http://${Constants.ip}/mypage/info');
+    final url = Uri.parse('http://${Constants.ip}/mypage/info'); // 수정된 URL 경로
 
     try {
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email}),
+        headers: {
+          'Content-Type': 'application/json', // JSON 형식 명시
+        },
+        body: json.encode({
+          'email': email, // 이메일을 Body로 전달
+        }),
       );
 
       setState(() {
         _userData = json.decode(utf8.decode(response.bodyBytes));
-        _isLoading = false;
+        _isLoading = false; // 데이터 로드 완료
       });
     } catch (error) {
-      print('Error loading user data: $error');
+      logger.e('유저 데이터 로드 중 오류 발생: $error');
       setState(() {
         _isLoading = false;
       });
@@ -59,29 +93,16 @@ class _MyPageScreenState extends State<MyPageScreen> {
       );
 
       // 응답 본문을 로그로 출력하여 확인
-      print('Response Body: ${response.body}');
+      logger.i('Response Body: ${response.body}');
 
-      if (response.statusCode == 200) {
-        if (response.body.isNotEmpty) {
-          final responseData = json.decode(response.body);
-          // 응답에 'account' 필드가 있는지 확인
-          if (responseData.containsKey('account')) {
-            setState(() {
-              _walletBalance =
-                  responseData['account'].toDouble(); // account 값으로 잔액 갱신
-            });
-            print("Updated wallet balance: $_walletBalance");
-          } else {
-            print("응답에 'account' 필드가 없습니다.");
-          }
-        } else {
-          print("빈 응답 본문");
-        }
-      } else {
-        print("응답 상태 코드 오류: ${response.statusCode}");
-      }
+      final responseData = json.decode(response.body);
+
+      setState(() {
+        _walletBalance =
+            responseData['account'].toDouble(); // account 값으로 잔액 갱신
+      });
     } catch (error) {
-      print('지갑 잔액 업데이트 중 오류 발생: $error');
+      logger.e('지갑 잔액 업데이트 중 오류 발생: $error');
     }
   }
 
@@ -89,10 +110,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        appBar: AppBar(title: Text("마이페이지")),
+        body: Center(child: CircularProgressIndicator()), // 로딩 중 표시
       );
     }
-
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: Stack(
@@ -132,7 +153,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       Border.all(color: Colors.blueAccent, width: 2), // 테두리 설정
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.3), // 그림자 효과
+                      color:
+                          Colors.grey.withAlpha((0.3 * 255).toInt()), // 그림자 효과
                       blurRadius: 10,
                       offset: Offset(0, 5),
                     ),
@@ -284,24 +306,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
     );
   }
 
-  // Helper method to build transaction buttons
-  Widget _buildTransactionButton(String action, Color color) {
-    return ElevatedButton(
-      onPressed: () => _showTransactionDialog(action),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Text(
-        action,
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
   void _showTransactionDialog(String action) {
     TextEditingController amountController = TextEditingController();
 
@@ -332,10 +336,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 if (change.isNotEmpty && double.tryParse(change) != null) {
                   await _updateWalletAccount(choice, change);
                 } else {
-                  print("잘못된 금액 입력");
+                  logger.e("잘못된 금액 입력");
                 }
               },
-              child: Text("$action"),
+              child: Text(action),
             ),
           ],
         );
@@ -356,16 +360,12 @@ class _MyPageScreenState extends State<MyPageScreen> {
             json.encode({'mainId': email, 'change': change, 'choice': choice}),
       );
 
-      if (response.statusCode == 200) {
-        // 성공적으로 업데이트된 경우 지갑 잔액 갱신
-        setState(() {
-          _walletBalance = json.decode(response.body)['balance'];
-        });
-      } else {
-        print("업데이트 실패: ${response.statusCode}");
-      }
+      // 성공적으로 업데이트된 경우 지갑 잔액 갱신
+      setState(() {
+        _walletBalance = json.decode(response.body)['balance'];
+      });
     } catch (error) {
-      print('Error updating wallet balance: $error');
+      logger.e('Error updating wallet balance: $error');
     }
   }
 }

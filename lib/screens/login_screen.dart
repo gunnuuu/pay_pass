@@ -1,26 +1,25 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import 'package:pay_pass/utils/get_stations_service.dart';
 import 'package:pay_pass/utils/google_login_helper.dart';
+import 'package:pay_pass/utils/logger.dart';
 import 'package:pay_pass/screens/map_screen.dart';
 import 'package:pay_pass/utils/notification_service.dart';
 import 'package:pay_pass/variables/constants.dart';
 import 'package:pay_pass/variables/globals.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'new_user_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   final GoogleLoginHelper googleLoginHelper = GoogleLoginHelper();
 
+  LoginScreen({super.key});
+
   void _handleGoogleLogin(BuildContext context) async {
     String? googleId = await googleLoginHelper.login();
 
-    // 로그인 상태 저장
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool('isLoggedIn', true); // 로그인 상태 저장
-
-    print("구글 로그인 성공: $googleId");
+    logger.i("구글 로그인 성공: $googleId");
     globalGoogleId = googleId; // 전역 변수에 저장
 
     // 지도 데이터 가져오기
@@ -41,21 +40,23 @@ class LoginScreen extends StatelessWidget {
         print("EXISTING_USER 데이터 확인");
         // 기존 유저일 경우
         Navigator.pushReplacement(
+          // ignore: use_build_context_synchronously
           context,
           MaterialPageRoute(builder: (context) => MapScreen()),
         );
       }
 
       if (responseBody['status'] == 'NEW_USER') {
-        print("NEW_USER 데이터 확인");
+        logger.i("NEW_USER 데이터 확인");
         // 신규 유저일 경우
         Navigator.pushReplacement(
+          // ignore: use_build_context_synchronously
           context,
           MaterialPageRoute(builder: (context) => NewUserScreen()),
         );
       }
     } else {
-      print("서버 오류: ${response.statusCode}");
+      logger.e("서버 오류: ${response.statusCode}");
     }
   }
 
@@ -104,7 +105,7 @@ class LoginScreen extends StatelessWidget {
                     Checkbox(
                       value: true, // 초기 상태 (true: 체크, false: 체크 해제)
                       onChanged: (bool? newValue) {
-                        print("로그인 정보 저장 체크 상태: $newValue");
+                        logger.i("로그인 정보 저장 체크 상태: $newValue");
                       },
                     ),
                     Text("로그인 정보 저장"),
@@ -112,7 +113,7 @@ class LoginScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    print("회원가입 클릭");
+                    logger.i("회원가입 클릭");
                     // 회원가입 페이지로 이동하는 로직 추가 가능
                   },
                   child: Text(
@@ -128,19 +129,19 @@ class LoginScreen extends StatelessWidget {
             // 로그인 버튼
             ElevatedButton(
               onPressed: () {
-                print("로그인 시도");
+                logger.i("로그인 시도");
                 // 로그인 처리 로직 추가
               },
-              child: Text(
-                "로그인",
-                style: TextStyle(fontSize: 18),
-              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.lightBlueAccent,
                 minimumSize: Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+              ),
+              child: Text(
+                "로그인",
+                style: TextStyle(fontSize: 18),
               ),
             ),
             SizedBox(height: 20),
@@ -159,7 +160,7 @@ class LoginScreen extends StatelessWidget {
 
             GestureDetector(
               onTap: () {
-                print("카카오 로그인 시도");
+                logger.i("카카오 로그인 시도");
               },
               child: Image.asset(
                 'assets/kakao_button.png', // 카카오 버튼 이미지
