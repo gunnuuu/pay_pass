@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.pay_pass"  // 네임스페이스 설정
     compileSdk = flutter.compileSdkVersion  // Flutter SDK에 맞춰 컴파일 SDK 설정
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
